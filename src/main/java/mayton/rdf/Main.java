@@ -12,13 +12,11 @@ import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
 import java.io.FileOutputStream;
-import java.io.FileWriter;
 import java.io.IOException;
 import java.io.OutputStream;
 import java.nio.file.Files;
 import java.nio.file.Path;
-
-import static org.apache.jena.ontology.OntModelSpec.RDFS_MEM;
+import java.util.concurrent.TimeUnit;
 
 public class Main {
 
@@ -69,22 +67,27 @@ public class Main {
 
         logger.info("Export ttl");
 
+        StopWatch ttlWatch = StopWatch.createStarted();
         try(OutputStream os = new FileOutputStream(out + ".ttl")) {
             RDFDataMgr.write(
                     os,
                     model,
                     RDFFormat.TURTLE);
         }
+        ttlWatch.stop();
 
+        StopWatch rdfWatch = StopWatch.createStarted();
         try(OutputStream os = new FileOutputStream(out + ".xml")) {
             RDFDataMgr.write(
                     os,
                     model,
                     RDFFormat.RDFXML);
         }
+        rdfWatch.stop();
 
-
-
+        logger.info("Elapsed time:");
+        logger.info("TURTLE save time  : {} s", ttlWatch.getTime(TimeUnit.SECONDS));
+        logger.info("RDF/XML save time : {} s", rdfWatch.getTime(TimeUnit.SECONDS));
         logger.info("Finish");
     }
 }

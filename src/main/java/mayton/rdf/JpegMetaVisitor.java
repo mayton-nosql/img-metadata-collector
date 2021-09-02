@@ -1,11 +1,13 @@
 package mayton.rdf;
 
+import mayton.jfr.CollectEvent;
 import org.apache.commons.imaging.ImageReadException;
 import org.apache.commons.imaging.Imaging;
 import org.apache.commons.imaging.common.ImageMetadata;
 import org.apache.commons.imaging.formats.jpeg.JpegImageMetadata;
 import org.apache.commons.imaging.formats.tiff.TiffField;
 import org.apache.commons.imaging.formats.tiff.TiffImageMetadata;
+import org.apache.commons.lang3.tuple.Triple;
 import org.apache.jena.rdf.model.Model;
 import org.apache.jena.rdf.model.Statement;
 import org.slf4j.Logger;
@@ -30,6 +32,8 @@ public class JpegMetaVisitor extends SimpleFileVisitor<Path> {
 
     private int id = 0;
 
+    private TiffToRdf tiffToRdf = new TiffToRdf();
+
     public JpegMetaVisitor(Model model) {
         this.model = model;
     }
@@ -42,20 +46,29 @@ public class JpegMetaVisitor extends SimpleFileVisitor<Path> {
             logger.info("process jpeg file {}", fileName);
             logger.info("get metadata");
             ImageMetadata metadata;
+            id++;
+            CollectEvent collectEvent = new CollectEvent();
+            collectEvent.id = id;
+            collectEvent.begin();
             try {
                 metadata = Imaging.getMetadata(new FileInputStream(file.toFile()), null);
                 if (metadata != null) {
                     TiffImageMetadata items = ((JpegImageMetadata) metadata).getExif();
-                    TiffToRdf tiffToRdf = new TiffToRdf();
-                    id++;
-                    for (TiffField tiffField : items.getAllFields()) {
-                        Statement statement = tiffToRdf.apply(model, tiffField, id);
-                        if (statement != null) {
-                            model.add(statement);
+                    if (items != null) {
+                        for (TiffField tiffField : items.getAllFields()) {
+                            Statement statement = tiffToRdf.apply(Triple.of(model, tiffField, id));
+                            if (statement != null) {
+                                model.add(statement);
+                            }
+                            logger.debug(":: {}", statement);
                         }
                     }
                 }
+                collectEvent.end();
+                collectEvent.commit();
             } catch (ImageReadException e) {
+                collectEvent.end();
+                collectEvent.commit();
                 logger.warn("ImageReadException", e);
             }
         }
