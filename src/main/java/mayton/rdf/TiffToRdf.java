@@ -2,6 +2,7 @@ package mayton.rdf;
 
 import org.apache.commons.codec.binary.Hex;
 import org.apache.commons.imaging.ImageReadException;
+import org.apache.commons.imaging.common.RationalNumber;
 import org.apache.commons.imaging.formats.tiff.TiffField;
 import org.apache.commons.imaging.formats.tiff.fieldtypes.FieldType;
 import org.apache.commons.lang3.StringUtils;
@@ -30,10 +31,14 @@ public class TiffToRdf implements Function<Triple<Model, TiffField, Integer>, St
             String tagName = normalizeLiteral(tiffField.getTagName());
             String subject = JPG_NS + "id" + fileId;
             if (tiffField.getFieldType() == FieldType.ASCII) {
-                return model.createLiteralStatement(
-                        model.createResource(subject),
-                        model.createProperty(JPG_NS + tagName),
-                        tiffField.getStringValue());
+                if (!StringUtils.isBlank(tiffField.getStringValue())) {
+                    return model.createLiteralStatement(
+                            model.createResource(subject),
+                            model.createProperty(JPG_NS + tagName),
+                            tiffField.getStringValue());
+                } else {
+                    return null;
+                }
             } else if (tiffField.getFieldType() == FieldType.LONG) {
                 return model.createLiteralStatement(
                         model.createResource(subject),
@@ -53,6 +58,8 @@ public class TiffToRdf implements Function<Triple<Model, TiffField, Integer>, St
                             model.createProperty(JPG_NS + tagName),
                             intVal);
                 } else {
+                    logger.warn("[1] Unable to recognize tiffFiled type = {}, tagname = {}",
+                            tiffField.getFieldType().getName(), tiffField.getTagName());
                     return null;
                 }
             } else if (tiffField.getFieldType() == FieldType.DOUBLE) {
@@ -60,9 +67,24 @@ public class TiffToRdf implements Function<Triple<Model, TiffField, Integer>, St
                         model.createResource(subject),
                         model.createProperty(JPG_NS + tagName),
                         tiffField.getDoubleValue());
+            } else if (tiffField.getFieldType() == FieldType.RATIONAL) {
+                Object val = tiffField.getValue();
+                if (val instanceof RationalNumber) {
+                    RationalNumber rationalNumber = (RationalNumber) val;
+                    String stringVal = "" + rationalNumber.numerator + "/" + rationalNumber.divisor;
+                    logger.debug("val = {}", stringVal);
+                    return model.createLiteralStatement(
+                            model.createResource(subject),
+                            model.createProperty(JPG_NS + tagName),
+                            stringVal);
+                } else {
+                    logger.warn("[2] Unable to recognize tiffFiled type = {}, tagname = {}",
+                            tiffField.getFieldType().getName(), tiffField.getTagName());
+                    return null;
+                }
             } else {
-                logger.warn("Unable to recognize tiffFiled type = {}, tagname = {}",
-                        tiffField.getFieldType(), tiffField.getTagName());
+                logger.warn("[3] Unable to recognize tiffFiled type = {}, tagname = {}",
+                        tiffField.getFieldType().getName(), tiffField.getTagName());
                 return null;
             }
         } catch (ImageReadException ex) {

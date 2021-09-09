@@ -18,7 +18,11 @@ import java.nio.file.Files;
 import java.nio.file.Path;
 import java.util.concurrent.TimeUnit;
 
+import static mayton.rdf.Constants.*;
+
 public class Main {
+
+
 
     public static Logger logger = LoggerFactory.getLogger(Main.class);
 
@@ -33,12 +37,12 @@ public class Main {
         Options options = createOptions();
         if (args.length == 0) {
             HelpFormatter formatter = new HelpFormatter();
-            formatter.printHelp("java -jar ApplicationName-1.0.jar", createOptions(), true);
+            formatter.printHelp("java -jar img-metadata-collector-xx.jar", createOptions(), true);
         } else {
             CommandLine line = parser.parse(options, args);
             if (line.hasOption("h")) {
                 HelpFormatter formatter = new HelpFormatter();
-                formatter.printHelp("java -jar ApplicationName-1.0.jar", createOptions(), true);
+                formatter.printHelp("java -jar img-metadata-collector-xx.jar", createOptions(), true);
                 return;
             }
             process(line);
@@ -50,12 +54,13 @@ public class Main {
 
         Model model = ModelFactory.createDefaultModel();
 
-        model.setNsPrefix("rdf", "http://www.w3.org/1999/02/22-rdf-syntax-ns#");
-        model.setNsPrefix("rdfs", "http://www.w3.org/2000/01/rdf-schema#");
-        model.setNsPrefix("xsd", "http://www.w3.org/2001/XMLSchema#");
-        model.setNsPrefix("owl", "http://www.w3.org/2002/07/owl#");
+        model.setNsPrefix("rdf",  RDF_NS);
+        model.setNsPrefix("rdfs", RDFS_NS);
+        model.setNsPrefix("xsd",  XSD_NS);
+        model.setNsPrefix("owl",  OWL_NS);
 
-        model.setNsPrefix("jpg", Constants.JPG_NS);
+        model.setNsPrefix("jpg",  Constants.JPG_NS);
+        model.setNsPrefix("file", Constants.FILE_NS);
 
         JpegMetaVisitor jpegMetaVisitor = new JpegMetaVisitor(model);
 

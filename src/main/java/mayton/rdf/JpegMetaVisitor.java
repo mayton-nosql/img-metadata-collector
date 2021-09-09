@@ -22,6 +22,9 @@ import java.nio.file.attribute.BasicFileAttributes;
 import java.util.regex.Matcher;
 import java.util.regex.Pattern;
 
+import static mayton.rdf.Constants.FILE_NS;
+import static mayton.rdf.Constants.JPG_NS;
+
 public class JpegMetaVisitor extends SimpleFileVisitor<Path> {
 
     static Logger logger = LoggerFactory.getLogger(JpegMetaVisitor.class);
@@ -41,12 +44,20 @@ public class JpegMetaVisitor extends SimpleFileVisitor<Path> {
     @Override
     public FileVisitResult visitFile(Path file, BasicFileAttributes attrs) throws IOException {
         String fileName = file.getFileName().toString();
+        String filePath = file.toString();
         Matcher matcher = JPEG_EXTENSION.matcher(fileName);
         if (matcher.matches()) {
+            id++;
+            String subject = JPG_NS + "id" + id;
+            model.add(
+                    model.createLiteralStatement(
+                    model.createResource(subject),
+                    model.createProperty(FILE_NS + "fileName"),
+                            filePath));
             logger.info("process jpeg file {}", fileName);
             logger.info("get metadata");
             ImageMetadata metadata;
-            id++;
+
             CollectEvent collectEvent = new CollectEvent();
             collectEvent.id = id;
             collectEvent.begin();
